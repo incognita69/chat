@@ -6,18 +6,22 @@ console.log('Token cargado:', process.env.DV_TOKEN);
 
 
 import { createClient } from '@libsql/client'
-
 import { Server } from 'socket.io';
 import { createServer } from 'node:http'
 
-
-const port = process.env.PORT || 3000;
-
 const app = express();
 const server = createServer(app);
+
+
 const io = new Server(server,{
     connectionStateRecovery: {} 
 })
+
+const port = process.env.PORT || 3000; // Cambia el puerto si es necesario
+
+ if (!port) {
+  throw new Error('PORT no definido. Render requiere process.env.PORT')
+}
 
 const db = createClient({
   url: "libsql://chat-incognita69.aws-us-east-1.turso.io",
