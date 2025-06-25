@@ -17,11 +17,12 @@ const io = new Server(server,{
     connectionStateRecovery: {} 
 })
 
-const port = process.env.PORT || 3000; // Cambia el puerto si es necesario
+const port = process.env.PORT || 3000;
 
- if (!port) {
-  throw new Error('PORT no definido. Render requiere process.env.PORT')
-}
+server.listen(port, () => {
+  console.log(`server running on port ${port}`);
+});
+
 
 const db = createClient({
   url: "libsql://chat-incognita69.aws-us-east-1.turso.io",
@@ -30,12 +31,13 @@ const db = createClient({
 
 });
 
+async function initDb() {
 await db.execute(`
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content TEXT
-  )
-`);
+)
+    `);}
 
 
 
@@ -72,7 +74,7 @@ io.on('connection', async (socket) => {
   if (!socket.recovered)
     try {
         const result = await db.execute({
-          sql: 'SELECT id, content FROM messages WhERE id >?',
+          sql: 'SELECT id, content FROM messages WhERE id > ?',
           args: [socket.handshake.auth.serverOffset ?? 0]
         })
        result.rows.forEach((row) => {
@@ -93,8 +95,3 @@ app.use(logger('dev'));
 app.get('/', (req, res) => {
   res.sendFile(process.cwd() + '/client/index.html');
 });
-
-// no usar app, si no server
-server.listen(port, () => {
-  console.log(`server running on port ${port}`)
-})
