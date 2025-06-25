@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  
+   <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+ 
+  <title>Socket.IO chat</title>
+</head>
+
+<body>
+  <section id="chat">
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" />
+      <button>Enviar</button>
+    </form>
+  </section>
+
+
+  <script type="module">
+    import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
+
+    // ✅ Se define una variable externa
+    let serverOffset = 0;
+
+    // ✅ Se pasa en el auth solo al conectar
+    const socket = io({ 
+      auth: { serverOffset } 
+    });
+
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+
+    // ✅ Se actualiza la variable, no socket.auth
+    socket.on('chat message', (msg, offset) => {
+      const item = `<li>${msg}</li>`;
+      messages.insertAdjacentHTML('beforeend', item);
+      serverOffset = Number(offset);
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (input.value) {
+        socket.emit('chat message', input.value);
+        input.value = '';
+      }
+    });
+  </script>
+</body>
+</html>

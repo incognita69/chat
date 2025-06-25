@@ -1,0 +1,36 @@
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+ 
+
+body {
+ background-color: #b602a7;
+
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: grid;
+  place-content: center;
+  height: 100vh;
+  padding: 36px;
+  grid-template-rows: 1fr;
+}
+
+#messages {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  height: 90%;
+  scroll-padding-inline: 10px;
+}
+
+#chat {
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 400px;
+  height: 105%;
+  position: relative;
+}
