@@ -1,7 +1,30 @@
 import express from 'express'
 import logger from 'morgan'
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
 import dotenv from 'dotenv'
 dotenv.config();
+
+ // 🧩 Agregado justo debajo:
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });  // 👈 Este `upload` lo usarás en el paso 3
+
+
 console.log('Token cargado:', process.env.DV_TOKEN);
 
 import { createClient } from '@libsql/client'
@@ -77,7 +100,19 @@ io.on('connection', async (socket) => {
 
 app.use(express.static(process.cwd() + '/client'));
 
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 app.use(logger('dev'));
+
+// 🧩 PASO 3: Ruta para subir multimedia
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se subió ningún archivo' });
+  }
+
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ url: fileUrl });
+});
 
 app.get('/', (req, res) => {
   res.sendFile(process.cwd() + '/client/index.html');

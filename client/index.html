@@ -1,55 +1,123 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="es">
 <head>
-  
-   <link rel="stylesheet" href="styles.css">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
- 
-  <title>Socket.IO chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Web Clon</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
-  <section id="chat">
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" />
-      <button>Enviar</button>
-    </form>
-  </section>
+  <div id="app">
+    <!-- Columna izquierda: lista de chats -->
+    <div id="lista-chats">
+      <div id="barra-superior">
+        <span>Usuario</span>
+      </div>
 
+      <div id="busqueda">
+        <input type="text" placeholder="Buscar chat..." />
+      </div>
+
+      <div class="chat-preview">
+        <img src="https://via.placeholder.com/40" class="avatar" />
+        <div class="chat-info">
+          <h4>Juan</h4>
+          <p>¿Vamos al cine?</p>
+        </div>
+      </div>
+
+      <div class="chat-preview">
+        <img src="https://via.placeholder.com/40" class="avatar" />
+        <div class="chat-info">
+          <h4>Grupo Familia</h4>
+          <p>Mamá: Ya hice la comida</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: chat activo -->
+    <div id="chat-activo">
+      <div id="chat-header">
+        <img src="https://via.placeholder.com/40" class="avatar" />
+        <div>
+          <h4>Juan</h4>
+          <p>En línea</p>
+        </div>
+      </div>
+
+      <ul id="messages"></ul>
+
+      <form id="form">
+        <input id="input" autocomplete="off" placeholder="Escribe un mensaje..." />
+        
+        <!-- Botón clip para seleccionar archivo -->
+        <label for="fileInput" class="file-label" title="Enviar imagen o video">📎</label>
+        <input type="file" id="fileInput" accept="image/*,video/*" style="display:none" />
+        
+        <button type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
 
   <script type="module">
     import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
 
-    // ✅ Se define una variable externa
     let serverOffset = 0;
-
-    // ✅ Se pasa en el auth solo al conectar
-    const socket = io({ 
-      auth: { serverOffset } 
-    });
+    const socket = io({ auth: { serverOffset } });
 
     const form = document.getElementById('form');
     const input = document.getElementById('input');
     const messages = document.getElementById('messages');
+    const fileInput = document.getElementById('fileInput');
 
-    // ✅ Se actualiza la variable, no socket.auth
     socket.on('chat message', (msg, offset) => {
-      const item = `<li>${msg}</li>`;
+      let item;
+
+      if (msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
+        item = `<li class="mensaje propio"><img src="${msg}" style="max-width:200px; border-radius:10px;" /></li>`;
+      } else if (msg.match(/\.(mp4|webm|ogg)$/i)) {
+        item = `<li class="mensaje propio"><video src="${msg}" controls style="max-width:200px; border-radius:10px;"></video></li>`;
+      } else {
+        item = `<li class="mensaje propio">${msg}</li>`;
+      }
+
       messages.insertAdjacentHTML('beforeend', item);
+      messages.scrollTop = messages.scrollHeight;
       serverOffset = Number(offset);
     });
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-
-      if (input.value) {
-        socket.emit('chat message', input.value);
+      if (input.value.trim()) {
+        socket.emit('chat message', input.value.trim());
         input.value = '';
+      }
+    });
+
+    fileInput.addEventListener('change', async () => {
+      if (fileInput.files.length === 0) return;
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) throw new Error('Error al subir el archivo');
+
+        const data = await res.json();
+
+        socket.emit('chat message', data.url);
+      } catch (err) {
+        alert('No se pudo subir el archivo: ' + err.message);
+      } finally {
+        fileInput.value = '';
       }
     });
   </script>
 </body>
 </html>
+
