@@ -11,7 +11,7 @@ import { createServer } from 'node:http';
 
 dotenv.config();
 
-// Configuración de multer para subir archivos
+// Configuración multer para subida de archivos
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(process.cwd(), 'uploads');
@@ -41,13 +41,12 @@ server.listen(port, '0.0.0.0', () => {
   console.log(`Servidor escuchando en el puerto ${port}`);
 });
 
-// Conexión a la base de datos Turso LibSQL
 const db = createClient({
   url: 'libsql://chat-incognita69.aws-us-east-1.turso.io',
   authToken: process.env.DV_TOKEN
 });
 
-// Crear tabla si no existe
+// Crear tabla mensajes si no existe
 async function initDb() {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS messages (
@@ -58,22 +57,21 @@ async function initDb() {
 }
 initDb();
 
-// Middleware de autenticación para Socket.IO con JWT
+// Middleware Socket.IO para validar token JWT
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Token no proporcionado'));
-
   jwt.verify(token, process.env.SECRET_JWT_KEY, (err, decoded) => {
     if (err) return next(new Error('Token inválido'));
     socket.user = {
-      id: decoded.id,
-      username: decoded.username
+      username: decoded.username,
+      id: decoded.id // si incluyes id en token
     };
     next();
   });
 });
 
-// Mapa de usuarios conectados para chat privado (opcional)
+// Mapa para usuarios conectados (userId => socket)
 const users = new Map();
 
 io.on('connection', async (socket) => {
@@ -85,20 +83,23 @@ io.on('connection', async (socket) => {
     console.log(`${socket.user.username} desconectado`);
   });
 
-  // Mensaje público - guardar en DB y emitir a todos
+  // Mensaje público (chat global)
   socket.on('chat message', async (msg) => {
+    let result;
     try {
-      const result = await db.execute({
+      result = await db.execute({
         sql: 'INSERT INTO messages (content) VALUES (:msg)',
         args: { msg }
       });
-      io.emit('chat message', msg, result.lastInsertRowid.toString());
     } catch (e) {
       console.error('Error al guardar mensaje:', e);
+      return;
     }
+
+    io.emit('chat message', msg, result.lastInsertRowid.toString());
   });
 
-  // Mensajes privados (opcional)
+  // Mensaje privado
   socket.on('private message', ({ toUserId, message }) => {
     const targetSocket = users.get(toUserId);
     if (targetSocket) {
@@ -107,6 +108,8 @@ io.on('connection', async (socket) => {
         fromUsername: socket.user.username,
         message
       });
+    } else {
+      console.log('Usuario objetivo no conectado:', toUserId);
     }
   });
 
@@ -117,21 +120,21 @@ io.on('connection', async (socket) => {
         sql: 'SELECT id, content FROM messages WHERE id > ?',
         args: [socket.handshake.auth.serverOffset ?? 0]
       });
-      result.rows.forEach(row => {
+      result.rows.forEach((row) => {
         socket.emit('chat message', row.content, row.id.toString());
       });
     } catch (e) {
-      console.error('Error al recuperar mensajes:', e);
+      console.error(e);
     }
   }
 });
 
-// Rutas y middlewares HTTP
+// Middlewares y rutas HTTP
 app.use(express.static(process.cwd() + '/client'));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use(logger('dev'));
 
-// Ruta para subir archivos multimedia
+// Ruta para subir multimedia
 app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No se subió ningún archivo' });
@@ -140,7 +143,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ url: fileUrl });
 });
 
-// Ruta principal
+// Página principal
 app.get('/', (req, res) => {
   res.sendFile(process.cwd() + '/client/index.html');
 });

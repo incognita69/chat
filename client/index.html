@@ -2,32 +2,37 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WhatsApp Web Clon</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
+    /* Estilos completos aquí, igual que antes */
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #e5ddd5;
     }
+
     #app {
       display: flex;
       height: 100vh;
     }
+
     #lista-chats {
       width: 30%;
       background-color: #f6f6f6;
-      border-right: 1px solid #ccc;
+      border-right: 1px solid #ddd;
       display: flex;
       flex-direction: column;
     }
+
     #chat-activo {
       width: 70%;
       display: flex;
       flex-direction: column;
       background-color: #fff;
     }
+
     #barra-superior, #chat-header {
       padding: 15px;
       background-color: #ededed;
@@ -35,10 +40,23 @@
       display: flex;
       align-items: center;
     }
-    .avatar {
-      border-radius: 50%;
-      margin-right: 10px;
+
+    #barra-superior span {
+      font-weight: bold;
     }
+
+    #busqueda {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    #busqueda input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
     .chat-preview {
       padding: 10px;
       display: flex;
@@ -46,18 +64,27 @@
       cursor: pointer;
       border-bottom: 1px solid #ddd;
     }
+
     .chat-preview:hover {
       background-color: #eaeaea;
     }
+
+    .avatar {
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
     .chat-info h4 {
       margin: 0;
       font-size: 14px;
     }
+
     .chat-info p {
       margin: 2px 0 0;
       font-size: 12px;
       color: #555;
     }
+
     #messages {
       flex-grow: 1;
       overflow-y: auto;
@@ -65,9 +92,8 @@
       padding: 20px;
       margin: 0;
       background-color: #e5ddd5;
-      display: flex;
-      flex-direction: column;
     }
+
     #messages li {
       margin-bottom: 10px;
       padding: 10px;
@@ -75,12 +101,14 @@
       border-radius: 10px;
       max-width: 60%;
     }
+
     #form {
       display: flex;
       align-items: center;
       padding: 10px;
       background-color: #f0f0f0;
     }
+
     #input {
       flex-grow: 1;
       padding: 10px;
@@ -88,11 +116,13 @@
       border: 1px solid #ccc;
       margin-right: 10px;
     }
+
     .file-label {
       cursor: pointer;
       font-size: 20px;
       margin-right: 10px;
     }
+
     button[type="submit"] {
       padding: 10px 20px;
       border: none;
@@ -101,53 +131,52 @@
       color: white;
       cursor: pointer;
     }
+
     button[type="submit"]:hover {
       background-color: #075e54;
     }
+
     .mensaje.propio {
       align-self: flex-end;
       background-color: #dcf8c6;
-    }
-    .mensaje.otro {
-      align-self: flex-start;
-      background-color: #fff;
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- Lista de chats -->
+    <!-- Columna izquierda -->
     <div id="lista-chats">
       <div id="barra-superior">
         <span>Usuario</span>
       </div>
+
       <div id="busqueda">
         <input type="text" placeholder="Buscar chat..." />
       </div>
 
-      <!-- Simulación de muchos chats -->
       <div class="chat-preview">
         <img src="https://via.placeholder.com/40" class="avatar" />
-        <div class="chat-info"><h4>Juan</h4><p>¿Vamos al cine?</p></div>
+        <div class="chat-info">
+          <h4>Juan</h4>
+          <p>¿Vamos al cine?</p>
+        </div>
       </div>
+
       <div class="chat-preview">
         <img src="https://via.placeholder.com/40" class="avatar" />
-        <div class="chat-info"><h4>Ana</h4><p>Estoy ocupada ahora</p></div>
+        <div class="chat-info">
+          <h4>Grupo Familia</h4>
+          <p>Mamá: Ya hice la comida</p>
+        </div>
       </div>
-      <!-- Repetición para alargar visualmente -->
-      ${Array.from({length: 20}, (_, i) => `
-        <div class="chat-preview">
-          <img src="https://via.placeholder.com/40" class="avatar" />
-          <div class="chat-info"><h4>Contacto ${i+1}</h4><p>Último mensaje simulado...</p></div>
-        </div>`).join('')}
     </div>
 
-    <!-- Chat activo -->
+    <!-- Columna derecha -->
     <div id="chat-activo">
       <div id="chat-header">
         <img src="https://via.placeholder.com/40" class="avatar" />
         <div>
-          <h4>Contacto activo</h4>
+          <h4>Juan</h4>
           <p>En línea</p>
         </div>
       </div>
@@ -156,25 +185,32 @@
 
       <form id="form">
         <input id="input" autocomplete="off" placeholder="Escribe un mensaje..." />
+        
+        <!-- Botón de archivo -->
         <label for="fileInput" class="file-label" title="Enviar imagen o video">📎</label>
         <input type="file" id="fileInput" accept="image/*,video/*" style="display:none" />
+        
         <button type="submit">Enviar</button>
       </form>
     </div>
   </div>
 
-  <!-- Socket.IO y lógica -->
+  <!-- Script cliente Socket.IO -->
   <script type="module">
     import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
 
+    // Función para obtener cookie por nombre
     function getCookie(name) {
       const value = `; ${document.cookie}`;
-      const parts = value.split('; ' + name + '=');
+      const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
     }
 
+    const token = getCookie('access_token');
+    console.log('Token obtenido:', token);
+
     let serverOffset = 0;
-    const token = getCookie('token'); // asegúrate que tu cookie se llama 'token'
 
     const socket = io({
       auth: {
@@ -194,13 +230,15 @@
 
     socket.on('chat message', (msg, offset) => {
       let item;
+
       if (msg.match(/\.(jpg|jpeg|png|gif)$/i)) {
-        item = `<li class="mensaje propio"><img src="\${msg}" style="max-width:200px; border-radius:10px;" /></li>`;
+        item = `<li class="mensaje propio"><img src="${msg}" style="max-width:200px; border-radius:10px;" /></li>`;
       } else if (msg.match(/\.(mp4|webm|ogg)$/i)) {
-        item = `<li class="mensaje propio"><video src="\${msg}" controls style="max-width:200px; border-radius:10px;"></video></li>`;
+        item = `<li class="mensaje propio"><video src="${msg}" controls style="max-width:200px; border-radius:10px;"></video></li>`;
       } else {
-        item = `<li class="mensaje propio">\${msg}</li>`;
+        item = `<li class="mensaje propio">${msg}</li>`;
       }
+
       messages.insertAdjacentHTML('beforeend', item);
       messages.scrollTop = messages.scrollHeight;
       serverOffset = Number(offset);
