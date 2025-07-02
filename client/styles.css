@@ -143,8 +143,6 @@ body {
   padding: 10px 15px;
   background-color: #202c33;
   border-top: 1px solid #2a3942;
-  align-items: center;
-  gap: 8px;
 }
 
 #input {
@@ -170,20 +168,4 @@ body {
 
 #form button:hover {
   background-color: #4b0041;
-}
-
-/* Estilos para botón clip (📎) */
-.file-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0 10px;
-  font-size: 1.5rem;
-  color: white;
-  user-select: none;
-}
-
-.file-label:hover {
-  color: #ff00bf;
 }
